@@ -3,10 +3,8 @@ extern crate hex;
 extern crate reqwest;
 extern crate serde_json;
 extern crate tokio;
-use byteorder::{BigEndian, ReadBytesExt};
 use serde_json::{json, Value};
 use std::env::{args, Args};
-use std::io::Cursor;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -17,15 +15,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     None => panic!("RPC url is not provided."),
     // };
 
-    let start_block = match a.nth(2) {
-        Some(x) => x,
-        None => "1".to_string(),
-    };
+    //let start_block = match a.nth(2) {
+    //    Some(x) => x,
+    //    None => "1".to_string(),
+    //};
 
-    let process_count = match a.nth(3) {
-        Some(y) => y,
-        None => "1".to_string(),
-    };
+    //let process_count = match a.nth(3) {
+    //    Some(y) => y,
+    //    None => "1".to_string(),
+    //};
 
     let client = reqwest::Client::new();
 
@@ -43,21 +41,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .send()
         .await?;
     let text: Value = resp.json().await.unwrap();
+    let number = &text["result"]["block"]["header"]["number"]
+        .as_str()
+        .unwrap()
+        .trim_start_matches("0x");
 
-    println!("{:?}", text["result"]["block"]["header"]["number"]);
-    let mut last_block = hex::decode(
-        text["result"]["block"]["header"]["number"]
-            .as_str()
-            .unwrap()
-            .trim_start_matches("0x"),
-    )
-    .unwrap();
+    let mut last_block = hex::decode(number).unwrap();
 
-    //  let mut rdr = Cursor::new();
-    //  let num = rdr.read_u32::<BigEndian>().unwrap();
+    // Add one more byte to the Vec in order for the size to fit u34 (4 bytes).
+    last_block.insert(0, 0);
 
-    println!("{:?}", num);
-    let l = u32::from_le_bytes(last_block[0..4].try_into().unwrap());
+    let l = u32::from_be_bytes(last_block.try_into().unwrap());
 
     println!("{:?}", l);
 
