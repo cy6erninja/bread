@@ -24,7 +24,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //    Some(y) => y,
     //    None => "1".to_string(),
     //};
+    let bn = getHeadBlockNumber().await?;
+    println!("{:?}", bn);
 
+    Ok(())
+}
+
+async fn getHeadBlockNumber() -> Result<u32, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
 
     let resp = client
@@ -40,6 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .send()
         .await?;
+
     let text: Value = resp.json().await.unwrap();
     let number = &text["result"]["block"]["header"]["number"]
         .as_str()
@@ -51,9 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Add one more byte to the Vec in order for the size to fit u34 (4 bytes).
     last_block.insert(0, 0);
 
-    let l = u32::from_be_bytes(last_block.try_into().unwrap());
+    let headBlockNumber = u32::from_be_bytes(last_block.try_into().unwrap());
 
-    println!("{:?}", l);
-
-    Ok(())
+    Ok(headBlockNumber)
 }
