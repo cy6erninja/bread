@@ -10,22 +10,18 @@ use std::env::{args, Args};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Read the amount of addresses that either sent some transaction or received some money on a blockchain.
     let mut a: Args = args();
-    // let rpc = match a.nth(1) {
-    //     Some(a) => a,
-    //     None => panic!("RPC url is not provided."),
-    // };
+    let mut startBlockNumber = 11381909;
+    let bn = 11381910;
+    while startBlockNumber < bn {
+        let blockHash = getBlockHash(bn).await.unwrap();
+        println!("{:?}", blockHash);
 
-    //let start_block = match a.nth(2) {
-    //    Some(x) => x,
-    //    None => "1".to_string(),
-    //};
+        let bh = getBlockData(blockHash.as_str()).await;
+        let decoded = hex::decode(bh.unwrap());
 
-    //let process_count = match a.nth(3) {
-    //    Some(y) => y,
-    //    None => "1".to_string(),
-    //};
-    let bn = getHeadBlockNumber().await?;
-    println!("{:?}", bn);
+        println!("{:?}", decoded);
+        startBlockNumber += 1;
+    }
 
     Ok(())
 }
@@ -61,4 +57,57 @@ async fn getHeadBlockNumber() -> Result<u32, Box<dyn std::error::Error>> {
     let headBlockNumber = u32::from_be_bytes(last_block.try_into().unwrap());
 
     Ok(headBlockNumber)
+}
+
+async fn getBlockHash(blockNumber: u32) -> Result<String, Box<dyn std::error::Error>> {
+    let client = reqwest::Client::new();
+
+    let resp = client
+        .post("https://rpc.polkadot.io")
+        .json(&json! {
+
+            {
+                "id": 1,
+                "jsonrpc": "2.0",
+                "method": "chain_getBlockHash",
+                "params": [blockNumber]
+            }
+
+        })
+        .send()
+        .await?;
+
+    let text: Value = resp.json().await.unwrap();
+
+    let hash = text["result"].as_str().unwrap();
+
+    Ok(hash.to_string())
+}
+
+async fn getBlockData(blockHash: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let client = reqwest::Client::new();
+    let resp = client
+        .post("https://rpc.polkadot.io")
+        .json(&json! {
+
+                 {
+                     "id": 1,
+                     "jsonrpc":"2.0",
+                     "method":"chain_getBlock",
+                     "params": [blockHash]
+                 }
+
+        })
+        .send()
+        .await?;
+
+    let text: Value = resp.json().await.unwrap();
+
+    println!("{:?}", text);
+
+    Ok(text["result"]
+        .as_str()
+        .unwrap()
+        .trim_start_matches("0x")
+        .to_string())
 }
