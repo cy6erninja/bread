@@ -1,27 +1,30 @@
-extern crate byteorder;
 extern crate hex;
 extern crate reqwest;
 extern crate serde_json;
 extern crate tokio;
+use jsonrpsee_http_client::HttpClientBuilder;
 use serde_json::{json, Value};
-use std::env::{args, Args};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Read the amount of addresses that either sent some transaction or received some money on a blockchain.
-    let mut a: Args = args();
-    let mut startBlockNumber = 11381909;
+
+    //    let mut startBlockNumber = 11381909;
     let bn = 11381910;
-    while startBlockNumber < bn {
-        let blockHash = getBlockHash(bn).await.unwrap();
-        println!("{:?}", blockHash);
-
-        let bh = getBlockData(blockHash.as_str()).await;
-        let decoded = hex::decode(bh.unwrap());
-
-        println!("{:?}", decoded);
-        startBlockNumber += 1;
-    }
+    let blockHash = getBlockHash(bn).await.unwrap();
+    //    while startBlockNumber < bn {
+    //        let blockHash = getBlockHash(bn).await.unwrap();
+    //        println!("{:?}", blockHash);
+    //
+    //        let bh = getBlockData(blockHash.as_str()).await;
+    //        let decoded = hex::decode(bh.unwrap());
+    //
+    //        println!("{:?}", decoded);
+    //        startBlockNumber += 1;
+    //    }
+    let client = HttpClientBuilder::default()
+        .build("https://rpc.polkadot.io:80")
+        .unwrap();
 
     Ok(())
 }
